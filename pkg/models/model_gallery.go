@@ -3,20 +3,34 @@ package models
 import (
 	"archive/zip"
 	"database/sql"
+
 	"github.com/stashapp/stash/pkg/api/urlbuilders"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
 type Gallery struct {
-	ID        int             `db:"id" json:"id"`
-	Path      string          `db:"path" json:"path"`
-	Checksum  string          `db:"checksum" json:"checksum"`
-	SceneID   sql.NullInt64   `db:"scene_id,omitempty" json:"scene_id"`
-	CreatedAt SQLiteTimestamp `db:"created_at" json:"created_at"`
-	UpdatedAt SQLiteTimestamp `db:"updated_at" json:"updated_at"`
+	ID         int             `db:"id" json:"id"`
+	Path       string          `db:"path" json:"path"`
+	Checksum   string          `db:"checksum" json:"checksum"`
+	SceneID    sql.NullInt64   `db:"scene_id,omitempty" json:"scene_id"`
+	CreatedAt  SQLiteTimestamp `db:"created_at" json:"created_at"`
+	UpdatedAt  SQLiteTimestamp `db:"updated_at" json:"updated_at"`
+	Size       sql.NullString  `db:"size,omit_empty" json:"size"`
+	ImageCount sql.NullInt64   `db:"image_count,omitempty" json:"image_count"`
+	ModDate    SQLiteNullTime  `db:"mod_date" json:"mod_date"`
 }
 
 const DefaultGthumbWidth int = 200
+
+func (g *Gallery) CountFiles() int {
+	filteredFiles, readCloser, err := utils.ListZipContents(g.Path)
+	if err != nil {
+		return 0
+	}
+	defer readCloser.Close()
+
+	return len(filteredFiles)
+}
 
 func (g *Gallery) GetFiles(baseURL string) []*GalleryFilesType {
 	var galleryFiles []*GalleryFilesType

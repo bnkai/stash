@@ -1,4 +1,4 @@
-.scene-popovers {
+.card-popovers {
   display: flex;
   justify-content: center;
   margin-bottom: 10px;
@@ -22,17 +22,6 @@
     overflow-wrap: normal;
     text-overflow: ellipsis;
   }
-}
-
-.scene-card-check {
-  left: 0.5rem;
-  margin-top: -12px;
-  opacity: 0.5;
-  padding-left: 15px;
-  position: absolute;
-  top: 0.7rem;
-  width: 1.2rem;
-  z-index: 1;
 }
 
 .performer-tag-container,
@@ -76,11 +65,13 @@
 
 .studio-logo {
   margin-top: 1rem;
+  max-height: 8rem;
   max-width: 100%;
 }
 
 .scene-header {
   flex-basis: auto;
+  margin-top: 30px;
 }
 
 #scene-details-container {
@@ -99,7 +90,7 @@
   }
 }
 
-#details {
+textarea.scene-description {
   min-height: 150px;
 }
 
@@ -187,6 +178,21 @@
     position: relative;
   }
 
+  .scene-card-check {
+    left: 0.5rem;
+    margin-top: -12px;
+    opacity: 0;
+    padding-left: 15px;
+    position: absolute;
+    top: 0.7rem;
+    width: 1.2rem;
+    z-index: 1;
+
+    &:checked {
+      opacity: 0.75;
+    }
+  }
+
   .scene-specs-overlay,
   .rating-banner,
   .scene-studio-overlay {
@@ -205,6 +211,11 @@
       opacity: 0.75;
       transition: opacity 0.5s;
     }
+
+    .scene-card-check {
+      opacity: 0.75;
+      transition: opacity 0.5s;
+    }
   }
 }
 
@@ -215,8 +226,31 @@
   max-width: 100%;
 }
 
-.movie-table td {
-  vertical-align: middle;
+.movie-table {
+  width: 100%;
+
+  td {
+    vertical-align: middle;
+  }
+}
+
+.scene-tabs {
+  max-height: calc(100vh - 4rem);
+
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+@media (min-width: 1200px), (max-width: 575px) {
+  .performer-card .flag-icon {
+    height: 1.33rem;
+    width: 2rem;
+  }
+
+  .scene-performers .card-image {
+    height: 22.5rem;
+    width: 15rem;
+  }
 }
 
 .rating-stars {
@@ -250,12 +284,18 @@
   }
 }
 
-.rating td {
-  padding-bottom: 0;
-  padding-top: 0;
-}
+#scene-edit-details {
+  .rating-stars {
+    font-size: 1.3em;
+    height: calc(1.5em + 0.75rem + 2px);
+  }
 
-#scene-edit-details .rating-stars {
-  font-size: 1.3em;
-  height: calc(1.5em + 0.75rem + 2px);
+  .scrape-button-container {
+    margin-right: -15px;
+  }
+
+  .scrape-url-button {
+    color: $text-color;
+    margin-right: 0;
+  }
 }

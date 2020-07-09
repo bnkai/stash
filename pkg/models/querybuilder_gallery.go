@@ -9,6 +9,8 @@ import (
 	"github.com/stashapp/stash/pkg/database"
 )
 
+const galleryTable = "galleries"
+
 type GalleryQueryBuilder struct{}
 
 func NewGalleryQueryBuilder() GalleryQueryBuilder {
@@ -18,8 +20,8 @@ func NewGalleryQueryBuilder() GalleryQueryBuilder {
 func (qb *GalleryQueryBuilder) Create(newGallery Gallery, tx *sqlx.Tx) (*Gallery, error) {
 	ensureTx(tx)
 	result, err := tx.NamedExec(
-		`INSERT INTO galleries (path, checksum, scene_id, created_at, updated_at)
-				VALUES (:path, :checksum, :scene_id, :created_at, :updated_at)
+		`INSERT INTO galleries (path, checksum, scene_id, created_at, updated_at, size, image_count, mod_date)
+                               VALUES (:path, :checksum, :scene_id, :created_at, :updated_at, :image_count, :mod_date)
 		`,
 		newGallery,
 	)
@@ -112,25 +114,36 @@ func (qb *GalleryQueryBuilder) All() ([]*Gallery, error) {
 	return qb.queryGalleries(selectAll("galleries")+qb.getGallerySort(nil), nil, nil)
 }
 
-func (qb *GalleryQueryBuilder) Query(findFilter *FindFilterType) ([]*Gallery, int) {
+func (qb *GalleryQueryBuilder) Query(galleryFilter *GalleryFilterType, findFilter *FindFilterType) ([]*Gallery, int) {
+	if galleryFilter == nil {
+		galleryFilter = &GalleryFilterType{}
+	}
 	if findFilter == nil {
 		findFilter = &FindFilterType{}
 	}
 
-	var whereClauses []string
-	var havingClauses []string
-	var args []interface{}
-	body := selectDistinctIDs("galleries")
+	query := queryBuilder{
+		tableName: galleryTable,
+	}
+
+	query.body = selectDistinctIDs("galleries")
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		searchColumns := []string{"galleries.path", "galleries.checksum"}
 		clause, thisArgs := getSearchBinding(searchColumns, *q, false)
-		whereClauses = append(whereClauses, clause)
-		args = append(args, thisArgs...)
+		query.addWhere(clause)
+		query.addArg(thisArgs...)
 	}
 
-	sortAndPagination := qb.getGallerySort(findFilter) + getPagination(findFilter)
-	idsResult, countResult := executeFindQuery("galleries", body, args, sortAndPagination, whereClauses, havingClauses)
+	if isMissingFilter := galleryFilter.IsMissing; isMissingFilter != nil && *isMissingFilter != "" {
+		switch *isMissingFilter {
+		case "scene":
+			query.addWhere("galleries.scene_id IS NULL")
+		}
+	}
+
+	query.sortAndPagination = qb.getGallerySort(findFilter) + getPagination(findFilter)
+	idsResult, countResult := query.executeFind()
 
 	var galleries []*Gallery
 	for _, id := range idsResult {
@@ -190,4 +203,12 @@ func (qb *GalleryQueryBuilder) queryGalleries(query string, args []interface{}, 
 	}
 
 	return galleries, nil
+}
+
+func (qb *GalleryQueryBuilder) SizeCount() (uint64, error) {
+	sum, err := runSumQuery("SELECT SUM(size) as sum FROM galleries", nil)
+	if err != nil {
+		return 0, err
+	}
+	return sum, err
 }

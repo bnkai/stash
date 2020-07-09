@@ -3,14 +3,16 @@ package utils
 import (
 	"archive/zip"
 	"fmt"
-	"github.com/h2non/filetype"
-	"github.com/h2non/filetype/types"
 	"io/ioutil"
 	"math"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/h2non/filetype"
+	"github.com/h2non/filetype/types"
 )
 
 var supportedImages = []string{".jpg", ".jpeg", ".png", ".webp", ".gif"}
@@ -145,10 +147,13 @@ func FilenameIsImage(path string) bool {
 }
 
 // ListImages returns a slice of image paths present in the directory
-// not recursive
-func ListImages(path string) []string {
+// and their total size
+// ( not recursive )
+func ListImages(path string) ([]string, int64) {
+	var size int64 = 0
+
 	if path == "" {
-		return nil
+		return nil, 0
 	}
 
 	absolutePath, err := filepath.Abs(path)
@@ -163,7 +168,7 @@ func ListImages(path string) []string {
 	}
 
 	if err != nil {
-		return nil
+		return nil, 0
 	}
 
 	var images []string
@@ -177,10 +182,11 @@ func ListImages(path string) []string {
 		}
 		if FilenameIsImage(file.Name()) {
 			images = append(images, filepath.Join(abs, file.Name()))
+			size += file.Size()
 		}
 	}
 
-	return images
+	return images, size
 }
 
 // GetImageDirs gets all directories in the path that contain at least minImg images ( recursive )
@@ -204,7 +210,8 @@ func GetImageDirs(path string, info os.FileInfo, imageDirs *[]string, minImg int
 	if err != nil {
 		return
 	}
-	imgCount := len(ListImages(path))
+	images, _ := ListImages(path)
+	imgCount := len(images)
 	if imgCount > 0 && imgCount >= minImg { // add dir to list only if it has >= minImg images (minImg > 0)
 		*imageDirs = append(*imageDirs, path)
 	}
@@ -272,8 +279,8 @@ func WriteFile(path string, file []byte) error {
 }
 
 // GetIntraDir returns a string that can be added to filepath.Join to implement directory depth, "" on error
-//eg given a pattern of 0af63ce3c99162e9df23a997f62621c5 and a depth of 2 length of 3
-//returns 0af/63c or 0af\63c ( dependin on os)  that can be later used like this  filepath.Join(directory, intradir, basename)
+// eg given a pattern of 0af63ce3c99162e9df23a997f62621c5 and a depth of 2 length of 3
+// returns 0af/63c or 0af\63c ( dependin on os)  that can be later used like this  filepath.Join(directory, intradir, basename)
 func GetIntraDir(pattern string, depth, length int) string {
 	if depth < 1 || length < 1 || (depth*length > len(pattern)) {
 		return ""
@@ -305,4 +312,17 @@ func GetParent(path string) *string {
 		parentPath := filepath.Clean(path + "/..")
 		return &parentPath
 	}
+}
+
+// GetFileSizeTime returns a given file's size and modification time
+func GetFileSizeTime(path string) (size int64, modTime time.Time, err error) {
+	var fileInfo os.FileInfo
+	fileInfo, err = os.Stat(path)
+	if err != nil {
+		return
+	}
+
+	size = fileInfo.Size()
+	modTime = fileInfo.ModTime()
+	return
 }

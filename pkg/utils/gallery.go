@@ -4,14 +4,15 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"github.com/disintegration/imaging"
-	_ "golang.org/x/image/webp"
 	"image"
 	"image/jpeg"
 	"io/ioutil"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/disintegration/imaging"
+	_ "golang.org/x/image/webp"
 )
 
 // ListZipContents returns the images in a zip file using a zip.File slice and ordered by name using natural order
@@ -54,7 +55,7 @@ func ListZipContents(path string) ([]*zip.File, *zip.ReadCloser, error) {
 
 // ListDirContents returns the images in a directory path using a zip.File slice and ordered by name using natural order
 func ListDirContents(path string) ([]*zip.File, error) {
-	images := ListImages(path)
+	images, _ := ListImages(path)
 	if images == nil {
 		return nil, fmt.Errorf("error getting images from %s", path)
 	}
@@ -87,7 +88,7 @@ func ChecksumFromDirPath(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	images := ListImages(path)
+	images, _ := ListImages(path)
 	if images == nil {
 		return "", fmt.Errorf("no images found in %s", path)
 	}
